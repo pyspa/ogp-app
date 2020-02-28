@@ -1,0 +1,6 @@
+base_url = "https://ogp.app"
+api_server_port = "80"
+koruri_bold_font_path = "Koruri-Bold.ttf"
+default_image_width = 1200
+default_image_height = 630
+default_font_size = 100.0
