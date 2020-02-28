@@ -1,0 +1,13 @@
+root_path = "."
+
+watch_target_dirs = ["."]
+watch_exclude_dirs = [".git", "vendor", "tmp", "data"]
+watch_file_ext = [".go"]
+
+build_target_dir = "./tmp"
+build_target_name = "ogp-app-server"
+build_command = "go"
+build_options = ["build", "-v"]
+
+start_options = ["-c", "./config/dev.toml"]
+restart_process = true

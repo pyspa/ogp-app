@@ -1,2 +1,2 @@
 # ogp-app
-ogp.app
+ogp app
