@@ -156,7 +156,7 @@ const output = `
 	  {{ .words }}
 	</p>
 	<p>
-	  {{ .baseURL }}/p/{{ .id }}
+	  <input size="60" value="{{ .baseURL }}/p/{{ .id }}">
 	</p>
 	<p>
 	  <img src="/image/{{ .file }}"></img>
