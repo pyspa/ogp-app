@@ -29,7 +29,15 @@ func main() {
 		http.StripPrefix("/image/", http.FileServer(http.Dir("data"))))
 	r.Methods(http.MethodPost).Path("/image").HandlerFunc(app.CreateImage)
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", cfg.APIServerPort), r); err != nil {
-		log.Fatal(err)
+	p := fmt.Sprintf(":%s", cfg.APIServerPort)
+	switch isTLS(cfg.BaseURL) {
+	case false:
+		if err := http.ListenAndServe(p, r); err != nil {
+			log.Fatal(err)
+		}
+	case true:
+		if err := http.ListenAndServeTLS(p, cfg.ServerCertPath, cfg.ServerKeyPath, r); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
