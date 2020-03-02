@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/achiku/mux"
 	"cloud.google.com/go/profiler"
+	"github.com/achiku/mux"
 )
 
 const (
-	serviceName = "ogp-app"
+	serviceName    = "ogp-app"
 	serviceVersion = "1.0.0" // TODO: replace this
-	maxRetry = 3
+	maxRetry       = 3
 )
 
 func init() {
@@ -55,7 +55,6 @@ func main() {
 		}
 	}
 }
-
 
 func initProfiler() {
 	for i := 0; i < maxRetry; i++ {
