@@ -156,7 +156,8 @@ const output = `
 	  {{ .words }}
 	</p>
 	<p>
-	  <input size="60" value="{{ .baseURL }}/p/{{ .id }}">
+      <input size="60" id="url" value="{{ .baseURL }}/p/{{ .id }}">
+      <button type="button" onclick="document.getElementById('url').select(),document.execCommand('copy')">copy</button>
 	</p>
 	<p>
 	  <img src="/image/{{ .file }}"></img>
