@@ -17,10 +17,6 @@ const (
 	maxRetry       = 3
 )
 
-func init() {
-
-}
-
 func main() {
 	go initProfiler()
 
