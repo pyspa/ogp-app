@@ -47,16 +47,16 @@ type App struct {
 func NewConfig(path string) (*Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to open path %v: %w", path, err)
 	}
 	defer f.Close()
 	buf, err := ioutil.ReadAll(f)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to read file %v: %w", path, err)
 	}
 	var cfg Config
 	if err := toml.Unmarshal(buf, &cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to unmarshal toml data: %w", err)
 	}
 	return &cfg, nil
 }
