@@ -210,7 +210,7 @@ func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// CreateImagePage create ogp image
+// CreateImagePage create ogp image page
 func (app *App) CreateImagePage(w http.ResponseWriter, r *http.Request) {
 	words := r.PostFormValue("words")
 	id := uuid.New()
