@@ -18,6 +18,7 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -241,7 +242,7 @@ type createImageReq struct {
 func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 	var d createImageReq
 	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
-		log.Printf("decode failed: %s", err)
+		logger.Error().Msgf("decode failed: %s", err)
 		return
 	}
 	words := d.Words
@@ -250,10 +251,10 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 	filepath := path.Join("data", filename)
 	wi, he, fs := app.Config.DefaultImageWidth, app.Config.DefaultImageHeight, app.Config.DefaultFontSize
 	if err := createImage(wi, he, fs, app.KoruriBold, words, filepath); err != nil {
-		log.Printf("create image failed: %s", err)
+		logger.Error().Msgf("create image failed: %s", err)
 		return
 	}
-	log.Printf("json data: %s", words)
+	logger.With().Str("words", words)
 	w.WriteHeader(http.StatusOK)
 	data := map[string]string{
 		"words":   words,
