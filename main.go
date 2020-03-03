@@ -37,7 +37,8 @@ func main() {
 	r.Methods(http.MethodGet).Path("/p/{id}").HandlerFunc(app.OgpPage)
 	r.Methods(http.MethodGet).PathPrefix("/image/").Handler(
 		http.StripPrefix("/image/", http.FileServer(http.Dir("data"))))
-	r.Methods(http.MethodPost).Path("/image").HandlerFunc(app.CreateImage)
+	r.Methods(http.MethodPost).Path("/image").HandlerFunc(app.CreateImagePage)
+	r.Methods(http.MethodPost).Path("/api/image").HandlerFunc(app.CreateImage)
 
 	p := fmt.Sprintf(":%s", cfg.APIServerPort)
 	switch isTLS(cfg.BaseURL) {

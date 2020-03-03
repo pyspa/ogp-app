@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"image"
@@ -209,8 +210,8 @@ func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// CreateImage create ogp image
-func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
+// CreateImagePage create ogp image
+func (app *App) CreateImagePage(w http.ResponseWriter, r *http.Request) {
 	words := r.PostFormValue("words")
 	id := uuid.New()
 	filename := fmt.Sprintf("%s.png", id.String())
@@ -228,6 +229,43 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 		"baseURL": app.Config.BaseURL,
 	}
 	if err := app.OutputTmpl.Execute(w, data); err != nil {
+		return
+	}
+	return
+}
+
+type createImageReq struct {
+	Words string `json:"words"`
+}
+
+// CreateImage create ogp image API
+func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
+	var d createImageReq
+	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
+		log.Printf("decode failed: %s", err)
+		return
+	}
+	words := d.Words
+	id := uuid.New()
+	filename := fmt.Sprintf("%s.png", id.String())
+	filepath := path.Join("data", filename)
+	wi, he, fs := app.Config.DefaultImageWidth, app.Config.DefaultImageHeight, app.Config.DefaultFontSize
+	if err := createImage(wi, he, fs, app.KoruriBold, words, filepath); err != nil {
+		log.Printf("create image failed: %s", err)
+		return
+	}
+	log.Printf("json data: %s", words)
+	w.WriteHeader(http.StatusOK)
+	data := map[string]string{
+		"words":   words,
+		"file":    filename,
+		"id":      id.String(),
+		"baseURL": app.Config.BaseURL,
+	}
+	w.Header().Set("Content-type", "application/json")
+	encoder := json.NewEncoder(w)
+	if err := encoder.Encode(data); err != nil {
+		log.Printf("encode failed: %s", err)
 		return
 	}
 	return
