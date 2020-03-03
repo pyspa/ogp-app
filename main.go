@@ -3,18 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
-	"time"
 
-	"cloud.google.com/go/profiler"
 	"github.com/achiku/mux"
-)
-
-const (
-	serviceName    = "ogp-app"
-	serviceVersion = "1.0.0" // TODO: replace this
-	maxRetry       = 3
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
@@ -25,11 +17,11 @@ func main() {
 
 	cfg, err := NewConfig(*configFile)
 	if err != nil {
-		log.Fatalf("Failed to create a new configuration: %v", err)
+		log.Fatal().Msgf("Failed to create a new configuration: %v", err)
 	}
 	app, err := NewApp(cfg)
 	if err != nil {
-		log.Fatalf("Failed to create a new application: %v", err)
+		log.Fatal().Msgf("Failed to create a new application: %v", err)
 	}
 
 	r := mux.NewRouter()
@@ -43,31 +35,11 @@ func main() {
 	switch isTLS(cfg.BaseURL) {
 	case false:
 		if err := http.ListenAndServe(p, r); err != nil {
-			log.Fatal(err)
+			log.Fatal().Msgf("Failed to run HTTP server without TLS: %v", err)
 		}
 	case true:
 		if err := http.ListenAndServeTLS(p, cfg.ServerCertPath, cfg.ServerKeyPath, r); err != nil {
-			log.Fatal(err)
+			log.Fatal().Msgf("Failed to run HTTP server with TLS: %v", err)
 		}
 	}
-}
-
-func initProfiler() {
-	for i := 0; i < maxRetry; i++ {
-		log.Println("")
-		// Profiler initialization, best done as early as possible.
-		if err := profiler.Start(profiler.Config{
-			Service:        serviceName,
-			ServiceVersion: serviceVersion,
-		}); err != nil {
-			log.Println("Failed to launch Profiler (%vth trial): %v", i, err)
-		} else {
-			log.Println("Started Cloud Profiler")
-			return
-		}
-		d := time.Second * 5 * time.Duration(i)
-		log.Printf("Wait %v seconds to retry launching Cloud Profiler\n", d)
-		time.Sleep(d)
-	}
-	log.Printf("Failed to launch Cloud Profiler after %v trials\n", maxRetry)
 }

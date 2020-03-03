@@ -7,7 +7,6 @@ import (
 	"image/draw"
 	"image/png"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -212,6 +211,7 @@ func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
 // CreateImage create ogp image
 func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 	words := r.PostFormValue("words")
+	logger.With().Str("words", words)
 	id := uuid.New()
 	filename := fmt.Sprintf("%s.png", id.String())
 	filepath := path.Join("data", filename)
@@ -219,7 +219,6 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 	if err := createImage(wi, he, fs, app.KoruriBold, words, filepath); err != nil {
 		return
 	}
-	log.Printf("post data: %s", words)
 	w.WriteHeader(http.StatusOK)
 	data := map[string]string{
 		"words":   words,
