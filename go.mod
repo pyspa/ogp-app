@@ -11,4 +11,5 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/rs/zerolog v1.18.0
 	golang.org/x/image v0.0.0-20200119044424-58c23975cae1
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
