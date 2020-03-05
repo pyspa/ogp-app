@@ -1,9 +1,6 @@
 base_url = "https://ogp.app"
-api_server_port = "443"
+api_server_port = "8080"
 koruri_bold_font_path = "Koruri-Bold.ttf"
 default_image_width = 1200
 default_image_height = 630
 default_font_size = 100.0
-
-server_cert_path = "/etc/letsencrypt/live/ogp.app/fullchain.pem"
-server_key_path = "/etc/letsencrypt/live/ogp.app/privkey.pem"
