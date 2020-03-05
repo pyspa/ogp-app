@@ -29,7 +29,7 @@ export default class Page extends Vue {
   }
   get shareUrl() {
     const url = new URL(document.URL);
-    return `${url.origin}/p/${this.$route.params.id}.png`;
+    return `${url.origin}/p/${this.$route.params.id}`;
   }
   onClickUrl() {
     document.getElementById("url").select();

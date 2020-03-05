@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"image"
 	"image/draw"
 	"image/png"
@@ -14,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/achiku/mux"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
@@ -37,9 +35,6 @@ type Config struct {
 // App ogp.app
 type App struct {
 	Config     *Config
-	OutputTmpl *template.Template
-	InputTmpl  string
-	PageTmpl   *template.Template
 	KoruriBold *truetype.Font
 }
 
@@ -63,14 +58,6 @@ func NewConfig(path string) (*Config, error) {
 
 // NewApp create app
 func NewApp(cfg *Config) (*App, error) {
-	outputTmpl, err := template.New("output").Parse(output)
-	if err != nil {
-		return nil, err
-	}
-	pageTmpl, err := template.New("page").Parse(page)
-	if err != nil {
-		return nil, err
-	}
 	fontBytes, err := ioutil.ReadFile(cfg.KoruriBoldFontPath)
 	if err != nil {
 		return nil, err
@@ -82,9 +69,6 @@ func NewApp(cfg *Config) (*App, error) {
 
 	return &App{
 		Config:     cfg,
-		OutputTmpl: outputTmpl,
-		InputTmpl:  inputForm,
-		PageTmpl:   pageTmpl,
 		KoruriBold: ft,
 	}, nil
 }
@@ -127,109 +111,17 @@ func createImage(width, height int, fontsize float64, ft *truetype.Font, text, o
 	return nil
 }
 
-const inputForm = `
-<html>
-  <head>
-    <title>ogp.app</title>
-  </head>
-  <body>
-    <h2><a href="/">ogp.app</a></h2>
-	<form action="/image" method="post">
-	  <p>
-	    <textarea name="words" rows="1" size="20"></textarea>
-	  </p>
-	  <p>
-	    <input type="submit" value="ogp">
-	  </p>
-	</form>
-  </body>
-</html>
-`
-
-const output = `
-<html>
-  <head>
-    <title>ogp.app</title>
-  </head>
-  <body>
-    <h2><a href="/">ogp.app</a></h2>
-	<p>
-	  {{ .words }}
-	</p>
-	<p>
-      <input size="60" id="url" value="{{ .baseURL }}/p/{{ .id }}">
-      <button type="button" onclick="document.getElementById('url').select(),document.execCommand('copy')">copy</button>
-	</p>
-	<p>
-	  <img src="/image/{{ .file }}"></img>
-	</p>
-  </body>
-</html>
-`
-
-const page = `
-<html>
-  <head>
-    <title>ogp.app</title>
-	  <meta name="og:type" content="website" />
-	  <meta name="og:url" content="{{ .baseURL }}/p/{{ .id }}" />
-	  <meta name="og:title" content="ogp.app" />
-	  <meta name="og:image" content="{{ .baseURL }}/image/{{ .file }}" />
-	  <meta name="twitter:card" content="summary_large_image" />
-	  <meta name="twitter:url" content="{{ .baseURL }}/p/{{ .id }}" />
-  </head>
-  <body>
-    <h2><a href="/">ogp.app</a></h2>
-	<p>
-	  <img src="/image/{{ .file }}"></img>
-	</p>
-  </body>
-</html>
-`
-
-// InputPage display input form
-func (app *App) InputPage(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, inputForm)
-	return
-}
-
 // OgpPage display ogp page
 func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	data := map[string]string{
-		"id":      id,
-		"file":    fmt.Sprintf("%s.png", id),
-		"baseURL": app.Config.BaseURL,
-	}
 	w.WriteHeader(http.StatusOK)
-	if err := app.PageTmpl.Execute(w, data); err != nil {
-		return
-	}
+	http.ServeFile(w, r, path.Join("client", "dist", "p.html"))
 	return
 }
 
-// CreateImagePage create ogp image page
-func (app *App) CreateImagePage(w http.ResponseWriter, r *http.Request) {
-	words := r.PostFormValue("words")
-	id := uuid.New()
-	filename := fmt.Sprintf("%s.png", id.String())
-	filepath := path.Join("data", filename)
-	wi, he, fs := app.Config.DefaultImageWidth, app.Config.DefaultImageHeight, app.Config.DefaultFontSize
-	if err := createImage(wi, he, fs, app.KoruriBold, words, filepath); err != nil {
-		return
-	}
+// IndexPage display index page
+func (app *App) IndexPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	data := map[string]string{
-		"words":   words,
-		"file":    filename,
-		"id":      id.String(),
-		"baseURL": app.Config.BaseURL,
-	}
-	if err := app.OutputTmpl.Execute(w, data); err != nil {
-		return
-	}
+	http.ServeFile(w, r, path.Join("client", "dist", "index.html"))
 	return
 }
 

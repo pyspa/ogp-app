@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"path"
 
 	"github.com/achiku/mux"
 	"github.com/rs/zerolog/log"
@@ -25,12 +26,23 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.Methods(http.MethodGet).Path("/").HandlerFunc(app.InputPage)
+
+	r.Methods(http.MethodGet).Path("/").HandlerFunc(app.IndexPage)
 	r.Methods(http.MethodGet).Path("/p/{id}").HandlerFunc(app.OgpPage)
 	r.Methods(http.MethodGet).PathPrefix("/image/").Handler(
 		http.StripPrefix("/image/", http.FileServer(http.Dir("data"))))
-	r.Methods(http.MethodPost).Path("/image").HandlerFunc(app.CreateImagePage)
-	r.Methods(http.MethodPost).Path("/api/image").HandlerFunc(app.CreateImage)
+
+	// static asset
+	r.Methods(http.MethodGet).PathPrefix("/js/").Handler(
+		http.StripPrefix("/js/", http.FileServer(http.Dir(path.Join("client", "dist", "js")))))
+	r.Methods(http.MethodGet).PathPrefix("/css/").Handler(
+		http.StripPrefix("/css/", http.FileServer(http.Dir(path.Join("client", "dist", "css")))))
+	r.Methods(http.MethodGet).PathPrefix("/img/").Handler(
+		http.StripPrefix("/img/", http.FileServer(http.Dir(path.Join("client", "dist", "img")))))
+
+	// API
+	r.Methods(http.MethodPost).Path("/api/image").Handler(
+		loggingMiddleware(http.HandlerFunc(app.CreateImage)))
 
 	p := fmt.Sprintf(":%s", cfg.APIServerPort)
 	switch isTLS(cfg.BaseURL) {
