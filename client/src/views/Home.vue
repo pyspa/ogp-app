@@ -25,9 +25,13 @@ export default class Home extends Vue {
     return this.$form.createForm(this, { name: "horizontal_login" });
   }
 
+  get apiHost() {
+    return process.env.VUE_APP_API_HOST || "";
+  }
+
   onSubmit() {
     this.axios
-      .post(`${process.env.VUE_APP_API_HOST}/api/image`, {
+      .post(`${this.apiHost}/api/image`, {
         words: this.words
       })
       .then(response => {
@@ -70,7 +74,7 @@ export default class Home extends Vue {
   font-family: 24px;
   font-size: 16px;
   width: 210px;
-  margin-right: 10px;
+  margin-right: 5px;
   &:focus {
     outline: none;
   }
