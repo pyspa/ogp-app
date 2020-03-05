@@ -7,7 +7,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <link rel="icon" href="<%= BASE_URL %>favicon.ico">
   <link href="https://fonts.googleapis.com/css?family=Lato:900&display=swap" rel="stylesheet">
-  <!-- <title><%= htmlWebpackPlugin.options.title %></title> -->
+  <meta name="og:type" content="website" />
+  <meta name="og:url" content="{{ .baseURL }}/p/{{ .id }}" />
+  <meta name="og:title" content="ogp.app" />
+  <meta name="og:image" content="{{ .baseURL }}/image/{{ .file }}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="{{ .baseURL }}/p/{{ .id }}" />
   <title>OGP.app</title>
 </head>
 
