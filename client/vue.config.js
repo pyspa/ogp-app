@@ -15,4 +15,11 @@ module.exports = {
       filename: 'p.html'
     }
   },
+  css: {
+    loaderOptions: {
+      scss: {
+        prependData: '@import "@/style.scss";'
+      }
+    }
+  }
 };

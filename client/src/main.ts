@@ -6,6 +6,8 @@ import store from "./store";
 import axios from "axios";
 import VueAxios from "vue-axios";
 
+import "@/style.scss";
+
 Vue.config.productionTip = false;
 
 axios.defaults.headers.post["Access-Control-Allow-Origin"] = "*";
