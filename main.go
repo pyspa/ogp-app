@@ -32,8 +32,8 @@ func main() {
 	r.Methods(http.MethodPost).Path("/image").HandlerFunc(app.CreateImagePage)
 	r.Methods(http.MethodPost).Path("/api/image").HandlerFunc(app.CreateImage)
 
-	p := fmt.Sprintf(":%s", cfg.APIServerPort)
-	switch isTLS(cfg.BaseURL) {
+	p := fmt.Sprintf("0.0.0.0:%s", cfg.APIServerPort)
+	switch cfg.IsTLS {
 	case false:
 		if err := http.ListenAndServe(p, r); err != nil {
 			log.Fatal().Msgf("Failed to run HTTP server without TLS: %v", err)

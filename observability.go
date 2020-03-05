@@ -60,7 +60,7 @@ func initLogger(stdout bool) *Logger {
 
 	projectID, err := metadata.ProjectID()
 	if err != nil {
-		log.Warn().Msgf("Failed to retrieve Google Cloud Platform Project ID: %v", err)
+		log.Warn().Msgf("Failed to retrieve Google Cloud Platform Project ID: %v. Using \"local\" for the ID instead.", err)
 		projectID = "local"
 	}
 	logname := fmt.Sprintf("projects/%s/logs/%s", projectID, serviceName)
