@@ -32,7 +32,7 @@ func main() {
 	r.Methods(http.MethodPost).Path("/image").HandlerFunc(app.CreateImagePage)
 	r.Methods(http.MethodPost).Path("/api/image").HandlerFunc(app.CreateImage)
 
-	p := fmt.Sprintf("0.0.0.0:%s", cfg.APIServerPort)
+	p := fmt.Sprintf(":%s", cfg.APIServerPort)
 	switch cfg.IsTLS {
 	case false:
 		if err := http.ListenAndServe(p, r); err != nil {

@@ -1,28 +1,31 @@
 steps:
-- name: gcr.io/cloud-builders/wget
+- name: 'gcr.io/cloud-builders/wget'
   args: ['-O', 'caddy', 'https://github.com/caddyserver/caddy/releases/download/v2.0.0-beta.15/caddy2_beta15_linux_amd64']
   id: CADDY
-- name: 'gcr.io/cloud-builders/go'
+
+- name: 'gcr.io/cloud-builders/go:debian'
   env:
   - 'GO111MODULE=on'
   - 'CGO_ENABLED=0'
-  - 'PROJECT_ROOT=ogp-app'
-  args: ['install', '.']
-  id: OGPAPP_GOINSTALL
-- name: 'gcr.io/cloud-builders/go'
+  - 'PROJECT_ROOT=exec'
+  args: ['build', '-o', 'exec/exec', 'exec/main.go']
+  waitFor: ['-']
+  id: EXECUTABLE
+
+- name: 'gcr.io/cloud-builders/go:debian'
   env:
   - 'GO111MODULE=on'
   - 'CGO_ENABLED=0'
   - 'PROJECT_ROOT=ogp-app'
   args: ['build', '-o', 'ogp-app', '.']
-  waitFor:
-  - OGPAPP_GOINSTALL
+  waitFor: ['-']
   id: OGPAPP_GOBUILD
 
 - name: 'gcr.io/cloud-builders/docker'
   args: ['build', '--tag=gcr.io/$PROJECT_ID/ogp-app', '.']
   waitFor:
   - 'CADDY'
+  - 'EXECUTABLE'
   - 'OGPAPP_GOBUILD'
 
 images:
