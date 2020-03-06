@@ -11,6 +11,7 @@ import (
 	"cloud.google.com/go/profiler"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
@@ -22,18 +23,31 @@ const (
 var (
 	// debug is the flag to change default log level to debug.
 	debug = flag.Bool("debug", false, "Set log level to debug")
-
 	// logger is the common logger among the apprecation.
 	// TODO: confirm the performance with Cloud Profiler.
-	logger zerolog.Logger
+	logger *Logger
+	// Logfile is the file name for this application log. The default is "ogp-app.log".
+	Logfile = "/var/log/ogp-app.log"
+	// MaxLogSize is the maximum log file size in MB before log lotation. The default is 10.
+	MaxLogSize = 10
+	// MaxLogBackups is the maximum number of lotated log files. The default is 5.
+	MaxLogBackups = 5
+	// MaxLogAge is the max age of each log file in days. The default is 28 days.
+	MaxLogAge = 28
 )
 
+// Logger is the custom logger from rs/zerolog that works with natefinch/lumberjack for log lotation.
+type Logger struct {
+	*zerolog.Logger
+}
+
 func init() {
-	logger = initLogger(nil)
+	// if in debug mode, the app emits the log to stdout as well as the log file.
+	logger = initLogger(*debug)
 }
 
 // initLogger returns the common logger inside the application.
-func initLogger(w io.Writer) (logger zerolog.Logger) {
+func initLogger(stdout bool) *Logger {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if *debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -46,15 +60,30 @@ func initLogger(w io.Writer) (logger zerolog.Logger) {
 
 	projectID, err := metadata.ProjectID()
 	if err != nil {
-		log.Warn().Msgf("Failed to retrieve Google Cloud Platform Project ID: %v", err)
+		log.Warn().Msgf("Failed to retrieve Google Cloud Platform Project ID: %v. Using \"local\" for the ID instead.", err)
 		projectID = "local"
 	}
 	logname := fmt.Sprintf("projects/%s/logs/%s", projectID, serviceName)
 
-	if w == nil {
-		w = os.Stdout
+	w := &lumberjack.Logger{
+		Filename:   Logfile,
+		MaxSize:    MaxLogSize,
+		MaxBackups: MaxLogBackups,
+		MaxAge:     MaxLogAge,
 	}
-	return zerolog.New(w).With().Str("logName", logname).Logger()
+	var writers []io.Writer
+	writers = append(writers, w)
+
+	if stdout {
+		writers = append(writers, os.Stdout)
+	}
+
+	mw := io.MultiWriter(writers...)
+
+	l := zerolog.New(mw).With().Timestamp().Str("logName", logname).Logger()
+	return &Logger{
+		Logger: &l,
+	}
 }
 
 // initProfiler starts Cloud Profiler. It retries at most maxRetry times.

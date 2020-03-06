@@ -11,14 +11,12 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/achiku/mux"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -26,6 +24,7 @@ import (
 // Config ogp.app config
 type Config struct {
 	BaseURL            string  `toml:"base_url"`
+	IsTLS              bool    `toml:"tls"`
 	APIServerPort      string  `toml:"api_server_port"`
 	KoruriBoldFontPath string  `toml:"koruri_bold_font_path"`
 	DefaultImageWidth  int     `toml:"default_image_width"`
@@ -90,11 +89,8 @@ func NewApp(cfg *Config) (*App, error) {
 	}, nil
 }
 
-func isTLS(url string) bool {
-	return strings.HasPrefix(url, "https")
-}
-
 func createImage(width, height int, fontsize float64, ft *truetype.Font, text, out string) error {
+	logger.Info().Str("words", text).Send()
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	draw.Draw(img, img.Bounds(), image.White, image.ZP, draw.Src)
 
@@ -213,7 +209,6 @@ func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
 // CreateImagePage create ogp image page
 func (app *App) CreateImagePage(w http.ResponseWriter, r *http.Request) {
 	words := r.PostFormValue("words")
-	logger.With().Str("words", words)
 	id := uuid.New()
 	filename := fmt.Sprintf("%s.png", id.String())
 	filepath := path.Join("data", filename)
@@ -254,7 +249,6 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 		logger.Error().Msgf("create image failed: %s", err)
 		return
 	}
-	logger.With().Str("words", words)
 	w.WriteHeader(http.StatusOK)
 	data := map[string]string{
 		"words":   words,
@@ -265,7 +259,7 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(data); err != nil {
-		log.Printf("encode failed: %s", err)
+		logger.Printf("encode failed: %s", err)
 		return
 	}
 	return
