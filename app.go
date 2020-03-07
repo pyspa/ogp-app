@@ -11,11 +11,13 @@ import (
 	"os"
 	"path"
 	"strings"
+	"text/template"
 
 	"github.com/BurntSushi/toml"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
+	"github.com/gorila/mux"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -38,6 +40,8 @@ type App struct {
 	KoruriBold    *truetype.Font
 	OgpPagePath   string
 	IndexPagePath string
+	OgpPageTmpl   *template.Template
+	IndexPageTmpl string
 }
 
 // NewConfig create app config
@@ -68,12 +72,36 @@ func NewApp(cfg *Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	pf, err := os.Open(path.Join("client", "dist", "p.html"))
+	if err != nil {
+		return nil, err
+	}
+	defer pf.Close()
+
+	pbuf, err := ioutil.ReadAll(pf)
+	if err != nil {
+		return nil, err
+	}
+	ogpPageTmpl, err := template.New("page").Parse(string(pbuf))
+	if err != nil {
+		return nil, err
+	}
+	idxf, err := os.Open(path.Join("client", "dist", "index.html"))
+	if err != nil {
+		return nil, err
+	}
+	defer idxf.Close()
+
+	idxbuf, err := ioutil.ReadAll(idxf)
+	if err != nil {
+		return nil, err
+	}
 
 	return &App{
 		Config:        cfg,
 		KoruriBold:    ft,
-		OgpPagePath:   path.Join("client", "dist", "p.html"),
-		IndexPagePath: path.Join("client", "dist", "index.html"),
+		OgpPageTmpl:   ogpPageTmpl,
+		IndexPageTmpl: string(idxbuf),
 	}, nil
 }
 
@@ -117,39 +145,24 @@ func createImage(width, height int, fontsize float64, ft *truetype.Font, text, o
 
 // OgpPage display ogp page
 func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
-	f, err := os.Open(app.OgpPagePath)
-	if err != nil {
-		logger.Error().Msgf("failed to open p.html: %s", err)
-		return
-	}
-	defer f.Close()
-
-	buf, err := ioutil.ReadAll(f)
-	if err != nil {
-		logger.Error().Msgf("failed to read p.html: %s", err)
-		return
+	vars := mux.Vars(r)
+	id := vars["id"]
+	data := map[string]string{
+		"id":      id,
+		"file":    fmt.Sprintf("%s.png", id),
+		"baseURL": app.Config.BaseURL,
 	}
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(buf))
+	if err := app.OgpPageTmpl.Execute(w, data); err != nil {
+		return
+	}
 	return
 }
 
 // IndexPage display index page
 func (app *App) IndexPage(w http.ResponseWriter, r *http.Request) {
-	f, err := os.Open(app.IndexPagePath)
-	if err != nil {
-		logger.Error().Msgf("failed to open index.html: %s", err)
-		return
-	}
-	defer f.Close()
-
-	buf, err := ioutil.ReadAll(f)
-	if err != nil {
-		logger.Error().Msgf("failed to read index.html: %s", err)
-		return
-	}
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(buf))
+	fmt.Fprint(w, app.IndexPageTmpl)
 	return
 }
 
