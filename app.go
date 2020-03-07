@@ -11,11 +11,13 @@ import (
 	"os"
 	"path"
 	"strings"
+	"text/template"
 
 	"github.com/BurntSushi/toml"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
+	"github.com/gorila/mux"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -34,8 +36,12 @@ type Config struct {
 
 // App ogp.app
 type App struct {
-	Config     *Config
-	KoruriBold *truetype.Font
+	Config        *Config
+	KoruriBold    *truetype.Font
+	OgpPagePath   string
+	IndexPagePath string
+	OgpPageTmpl   *template.Template
+	IndexPageTmpl string
 }
 
 // NewConfig create app config
@@ -66,10 +72,36 @@ func NewApp(cfg *Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	pf, err := os.Open(path.Join("client", "dist", "p.html"))
+	if err != nil {
+		return nil, err
+	}
+	defer pf.Close()
+
+	pbuf, err := ioutil.ReadAll(pf)
+	if err != nil {
+		return nil, err
+	}
+	ogpPageTmpl, err := template.New("page").Parse(string(pbuf))
+	if err != nil {
+		return nil, err
+	}
+	idxf, err := os.Open(path.Join("client", "dist", "index.html"))
+	if err != nil {
+		return nil, err
+	}
+	defer idxf.Close()
+
+	idxbuf, err := ioutil.ReadAll(idxf)
+	if err != nil {
+		return nil, err
+	}
 
 	return &App{
-		Config:     cfg,
-		KoruriBold: ft,
+		Config:        cfg,
+		KoruriBold:    ft,
+		OgpPageTmpl:   ogpPageTmpl,
+		IndexPageTmpl: string(idxbuf),
 	}, nil
 }
 
@@ -113,15 +145,24 @@ func createImage(width, height int, fontsize float64, ft *truetype.Font, text, o
 
 // OgpPage display ogp page
 func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	data := map[string]string{
+		"id":      id,
+		"file":    fmt.Sprintf("%s.png", id),
+		"baseURL": app.Config.BaseURL,
+	}
 	w.WriteHeader(http.StatusOK)
-	http.ServeFile(w, r, path.Join("client", "dist", "p.html"))
+	if err := app.OgpPageTmpl.Execute(w, data); err != nil {
+		return
+	}
 	return
 }
 
 // IndexPage display index page
 func (app *App) IndexPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	http.ServeFile(w, r, path.Join("client", "dist", "index.html"))
+	fmt.Fprint(w, app.IndexPageTmpl)
 	return
 }
 
