@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"path"
 
-	"github.com/gorila/mux"
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 )
 

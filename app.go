@@ -17,7 +17,7 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
-	"github.com/gorila/mux"
+	"github.com/gorilla/mux"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
