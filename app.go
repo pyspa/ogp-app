@@ -34,8 +34,10 @@ type Config struct {
 
 // App ogp.app
 type App struct {
-	Config     *Config
-	KoruriBold *truetype.Font
+	Config        *Config
+	KoruriBold    *truetype.Font
+	OgpPagePath   string
+	IndexPagePath string
 }
 
 // NewConfig create app config
@@ -68,8 +70,10 @@ func NewApp(cfg *Config) (*App, error) {
 	}
 
 	return &App{
-		Config:     cfg,
-		KoruriBold: ft,
+		Config:        cfg,
+		KoruriBold:    ft,
+		OgpPagePath:   path.Join("client", "dist", "p.html"),
+		IndexPagePath: path.Join("client", "dist", "index.html"),
 	}, nil
 }
 
@@ -113,15 +117,39 @@ func createImage(width, height int, fontsize float64, ft *truetype.Font, text, o
 
 // OgpPage display ogp page
 func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
+	f, err := os.Open(app.OgpPagePath)
+	if err != nil {
+		logger.Error().Msgf("failed to open p.html: %s", err)
+		return
+	}
+	defer f.Close()
+
+	buf, err := ioutil.ReadAll(f)
+	if err != nil {
+		logger.Error().Msgf("failed to read p.html: %s", err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	http.ServeFile(w, r, path.Join("client", "dist", "p.html"))
+	fmt.Fprint(w, string(buf))
 	return
 }
 
 // IndexPage display index page
 func (app *App) IndexPage(w http.ResponseWriter, r *http.Request) {
+	f, err := os.Open(app.IndexPagePath)
+	if err != nil {
+		logger.Error().Msgf("failed to open index.html: %s", err)
+		return
+	}
+	defer f.Close()
+
+	buf, err := ioutil.ReadAll(f)
+	if err != nil {
+		logger.Error().Msgf("failed to read index.html: %s", err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	http.ServeFile(w, r, path.Join("client", "dist", "index.html"))
+	fmt.Fprint(w, string(buf))
 	return
 }
 
