@@ -13,6 +13,5 @@ require (
 	github.com/rs/xlog v0.0.0-20171227185259-131980fab91b
 	github.com/rs/zerolog v1.18.0
 	golang.org/x/image v0.0.0-20200119044424-58c23975cae1
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
