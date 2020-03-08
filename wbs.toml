@@ -9,5 +9,5 @@ build_target_name = "ogp-app-server"
 build_command = "go"
 build_options = ["build", "-v"]
 
-start_options = ["-c", "./config/dev.toml"]
+start_options = ["-c", "./config/dev.toml", "-debug"]
 restart_process = true

@@ -1,0 +1,11 @@
+# response filters
+# response_filters:
+#   - type: label
+#     html: '<div style="position:fixed;left:0;top:0;width:100%;background-color:#ff0">DEVELOPMENT</div>'
+#     insert_before: "</body>"
+
+hosts:
+  http://ogp.local:
+    - ^(/api/.*)$: http://localhost:8080$1
+    - ^(/image/.*)$: http://localhost:8080$1
+    - ^(/.*)$: http://localhost:8999$1
