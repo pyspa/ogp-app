@@ -8,7 +8,7 @@
           placeholder="Please input your words."
           required
         />
-        <button type="submit">OPG!!!</button>
+        <button type="submit">OGP!!!</button>
       </div>
     </form>
   </div>
