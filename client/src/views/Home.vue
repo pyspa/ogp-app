@@ -43,7 +43,6 @@ export default class Home extends Vue {
       this.$router.push({ name: "Page", params: { id: response.data.id } });
     } catch (e) {
       alert(e);
-      console.error(e);
     } finally {
       this.loading = false;
     }

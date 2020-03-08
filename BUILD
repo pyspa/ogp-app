@@ -13,7 +13,10 @@ filegroup(
 
 filegroup(
     name = "ogpapp_client_js",
-    srcs = glob(["client/dist/js/*.js"]),
+    srcs = glob([
+        "client/dist/js/*.js",
+        "client/dist/js/*.js.map",
+    ]),
 )
 
 filegroup(

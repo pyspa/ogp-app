@@ -7,7 +7,8 @@ COPY client/ client/
 RUN cd client && npm ci && npm run build
 
 FROM gcr.io/distroless/base-debian10
-# FROM debian:buster-slim
+# Use `debug` tag for debug use. You can enter shell with --entrypoint=sh.
+# FROM gcr.io/distroless/base-debian10:debug
 WORKDIR /app
 COPY --from=app /go/bin/ogp-app .
 COPY --from=app /go/src/ogp-app/config/ ./
