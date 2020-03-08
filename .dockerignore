@@ -1,0 +1,8 @@
+.git
+.git/**/*
+.gitignore
+Dockerfile
+LICENSE
+README.md
+devproxy.yml
+wbs.toml
