@@ -1,3 +1,9 @@
-0.0.0.0:9000, localhost:9000, ogp.app:80
+${EXTERNAL_ADDR}
 
 reverse_proxy localhost:8080
+tls /app/cert.pem /app/key.pem
+
+@http {
+    protocol http
+}
+redir @http https://{host}{uri}

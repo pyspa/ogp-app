@@ -11,3 +11,7 @@ TODO: To be documented
 ## Production Environment
 
 Currently, [ogp.app](https://ogp.app) is running on Google Compute Engine.
+
+## Run docker image
+
+`$EXTERNAL_ADDR` is exposed host name and port for the ingress to the proxy. (eg. `localhost:9000`, `foo.com:443`)

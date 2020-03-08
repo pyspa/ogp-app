@@ -10,5 +10,7 @@ COPY ./exec/Caddyfile /app/Caddyfile
 COPY ./ogp-app /app/ogp-app
 COPY ./config/prd.toml /app/prd.toml
 COPY ./Koruri-Bold.ttf /app/Koruri-Bold.ttf
+COPY ./localhost-key.pem /app/key.pem
+COPY ./localhost.pem /app/cert.pem
 EXPOSE 9000
 CMD ["/app/exec"]
