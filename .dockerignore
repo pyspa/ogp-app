@@ -1,0 +1,12 @@
+.git
+.git/**/*
+.gitignore
+client/dist/
+client/dist/**/*
+client/node_modules/
+client/node_modules/**/*
+Dockerfile
+LICENSE
+README.md
+devproxy.yml
+wbs.toml
