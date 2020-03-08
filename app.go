@@ -1,24 +1,23 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"image"
-	"image/draw"
-	"image/png"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
 	"text/template"
 
+	"cloud.google.com/go/storage"
 	"github.com/BurntSushi/toml"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"golang.org/x/image/font"
-	"golang.org/x/image/math/fixed"
+	"google.golang.org/api/option"
 )
 
 // Config ogp.app config
@@ -33,12 +32,26 @@ type Config struct {
 	DefaultFontSize    float64 `toml:"default_font_size"`
 	ServerCertPath     string  `toml:"server_cert_path"`
 	ServerKeyPath      string  `toml:"server_key_path"`
+	StorageBackend     string  `toml:"storage_backend"`
+	Storage            struct {
+		Local struct {
+			BasePath      string `toml:"base_path"`
+			PublicBaseURL string `toml:"public_base_url"`
+		} `toml:"local"`
+		GCS struct {
+			CredentialsFile string `toml:"credentials_file"`
+			Bucket          string `toml:"bucket"`
+			Prefix          string `toml:"prefix"`
+			PublicBaseURL   string `toml:"public_base_url"`
+		} `toml:"gcs"`
+	} `toml:"storage"`
 }
 
 // App ogp.app
 type App struct {
 	Config        *Config
 	KoruriBold    *truetype.Font
+	store         ImageStore
 	OgpPagePath   string
 	IndexPagePath string
 	OgpPageTmpl   *template.Template
@@ -63,8 +76,58 @@ func NewConfig(path string) (*Config, error) {
 	return &cfg, nil
 }
 
+var storageBackends = map[string]func(context.Context, *Config) (ImageStore, error){
+	"local": func(_ context.Context, cfg *Config) (ImageStore, error) {
+		bcfg := cfg.Storage.Local
+		if bcfg.BasePath == "" && bcfg.PublicBaseURL == "" {
+			return &LocalImageStore{
+				BasePath:      "data",
+				PublicBaseURL: "/image",
+			}, nil
+		} else {
+			return &LocalImageStore{
+				BasePath:      bcfg.BasePath,
+				PublicBaseURL: bcfg.PublicBaseURL,
+			}, nil
+		}
+	},
+	"gcs": func(ctx context.Context, cfg *Config) (ImageStore, error) {
+		bcfg := cfg.Storage.GCS
+		if bcfg.Bucket == "" {
+			fmt.Printf("%+v", cfg)
+			return nil, fmt.Errorf("configuration for GCS storage backend is missing")
+		}
+		var options []option.ClientOption
+		if bcfg.CredentialsFile != "" {
+			options = append(options, option.WithCredentialsFile(bcfg.CredentialsFile))
+		}
+		client, err := storage.NewClient(ctx, options...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GCS client instance: %w", err)
+		}
+		return &GCSImageStore{
+			Client:        client,
+			Bucket:        bcfg.Bucket,
+			Prefix:        bcfg.Prefix,
+			PublicBaseURL: bcfg.PublicBaseURL,
+		}, nil
+	},
+}
+
+func buildStorageBackend(ctx context.Context, cfg *Config) (ImageStore, error) {
+	backendName := cfg.StorageBackend
+	if backendName == "" {
+		backendName = "local"
+	}
+	factory, ok := storageBackends[backendName]
+	if !ok {
+		return nil, fmt.Errorf("unsupported storage backend: %s", cfg.StorageBackend)
+	}
+	return factory(ctx, cfg)
+}
+
 // NewApp create app
-func NewApp(cfg *Config) (*App, error) {
+func NewApp(ctx context.Context, cfg *Config) (*App, error) {
 	fontBytes, err := ioutil.ReadFile(cfg.KoruriBoldFontPath)
 	if err != nil {
 		return nil, err
@@ -73,81 +136,82 @@ func NewApp(cfg *Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	pf, err := os.Open(path.Join("client", "dist", "p.html"))
-	if err != nil {
-		return nil, err
-	}
-	defer pf.Close()
 
-	pbuf, err := ioutil.ReadAll(pf)
-	if err != nil {
-		return nil, err
+	var ogpPageTmpl *template.Template
+	{
+		path := filepath.Join("client", "dist", "p.html")
+		pbuf, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read %s: %w", path, err)
+		}
+		ogpPageTmpl, err = template.New("page").Parse(string(pbuf))
+		if err != nil {
+			return nil, err
+		}
 	}
-	ogpPageTmpl, err := template.New("page").Parse(string(pbuf))
-	if err != nil {
-		return nil, err
-	}
-	idxf, err := os.Open(path.Join("client", "dist", "index.html"))
-	if err != nil {
-		return nil, err
-	}
-	defer idxf.Close()
 
-	idxbuf, err := ioutil.ReadAll(idxf)
+	var indexPageTmpl string
+	{
+		path := filepath.Join("client", "dist", "index.html")
+		idxbuf, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read %s: %w", path, err)
+		}
+		indexPageTmpl = string(idxbuf)
+	}
+
+	store, err := buildStorageBackend(ctx, cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize storage backend %s: %w", cfg.StorageBackend, err)
 	}
 
 	return &App{
 		Config:        cfg,
 		KoruriBold:    ft,
 		OgpPageTmpl:   ogpPageTmpl,
-		IndexPageTmpl: string(idxbuf),
+		IndexPageTmpl: indexPageTmpl,
+		store:         store,
 	}, nil
 }
 
-func createImage(width, height int, fontsize float64, ft *truetype.Font, text, out string) error {
-	logger.Info().Str("words", text).Send()
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.Draw(img, img.Bounds(), image.White, image.ZP, draw.Src)
-
-	opt := truetype.Options{
-		Size: fontsize,
+// deduceBaseURL deduces the application's base URL from the request headers.
+func deduceBaseURL(r *http.Request) string {
+	var scheme string
+	proto := r.Header.Get("X-Forwarded-Proto")
+	if proto != "" {
+		switch proto {
+		case "http", "https":
+			scheme = proto + ":"
+		}
+	} else {
+		if r.TLS != nil {
+			scheme = "https:"
+		} else {
+			scheme = "http:"
+		}
 	}
-	face := truetype.NewFace(ft, &opt)
-	dr := &font.Drawer{
-		Dst:  img,
-		Src:  image.Black,
-		Face: face,
-		Dot:  fixed.Point26_6{},
-	}
-	x := (fixed.I(width) - dr.MeasureString(text)) / 2
-	dr.Dot.X = x
-	y := (height + int(fontsize)/2) / 2
-	dr.Dot.Y = fixed.I(y)
+	host := r.Host
+	return fmt.Sprintf("%s//%s", scheme, host)
+}
 
-	dr.DrawString(text)
-
-	outfile, err := os.Create(out)
-	if err != nil {
-		return err
+// BaseURL returns the base URL for the service
+func (app *App) BaseURL(r *http.Request) string {
+	if app.Config.BaseURL != "" {
+		return app.Config.BaseURL
+	} else {
+		return deduceBaseURL(r)
 	}
-	defer outfile.Close()
-
-	if err := png.Encode(outfile, img); err != nil {
-		return err
-	}
-	return nil
 }
 
 // OgpPage display ogp page
 func (app *App) OgpPage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+	url := app.store.URL(id)
 	data := map[string]string{
-		"id":      id,
-		"file":    fmt.Sprintf("%s.png", id),
-		"baseURL": app.Config.BaseURL,
+		"id":       id,
+		"pageURL":  fmt.Sprintf("%s/p/%s", app.BaseURL(r), id),
+		"imageURL": url,
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := app.OgpPageTmpl.Execute(w, data); err != nil {
@@ -175,21 +239,34 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	words := d.Words
-	id := uuid.New()
-	filename := fmt.Sprintf("%s.png", id.String())
-	filepath := path.Join("data", filename)
-	wi, he, fs := app.Config.DefaultImageWidth, app.Config.DefaultImageHeight, app.Config.DefaultFontSize
-	if err := createImage(wi, he, fs, app.KoruriBold, words, filepath); err != nil {
+	id := uuid.New().String()
+
+	img, err := (&RenderSpec{
+		Width:    app.Config.DefaultImageWidth,
+		Height:   app.Config.DefaultImageHeight,
+		FontSize: app.Config.DefaultFontSize,
+		Font:     app.KoruriBold,
+	}).Render(words)
+	if err != nil {
+		logger.Error().Msgf("failed to render image: %w", err)
+		return
+	}
+
+	err = app.store.Save(r.Context(), img, id)
+	if err != nil {
 		logger.Error().Msgf("create image failed: %s", err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+
+	url := app.store.URL(id)
 	data := map[string]string{
-		"words":   words,
-		"file":    filename,
-		"id":      id.String(),
-		"baseURL": app.Config.BaseURL,
+		"words":    words,
+		"id":       id,
+		"pageURL":  fmt.Sprintf("%sp/%s", app.BaseURL(r), id),
+		"imageURL": url,
 	}
+
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-type", "application/json")
 	encoder := json.NewEncoder(w)
 	if err := encoder.Encode(data); err != nil {
@@ -197,4 +274,48 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	return
+}
+
+// Redirector redirects to the image URL
+func (app *App) Redirector(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idAndMaybeExt := vars["id"]
+	i := strings.LastIndexByte(idAndMaybeExt, '.')
+	var id string
+	if i >= 0 {
+		id = idAndMaybeExt[:i]
+	} else {
+		id = idAndMaybeExt
+	}
+
+	url := app.store.URL(id)
+	http.Redirect(w, r, url, http.StatusFound)
+}
+
+func (app *App) SetupRouter() *mux.Router {
+	r := mux.NewRouter()
+
+	r.Methods(http.MethodGet).Path("/").HandlerFunc(app.IndexPage)
+	r.Methods(http.MethodGet).Path("/p/{id}").HandlerFunc(app.OgpPage)
+
+	if s, ok := app.store.(*LocalImageStore); ok {
+		r.Methods(http.MethodGet).PathPrefix("/image/").Handler(
+			http.StripPrefix("/image/", http.FileServer(http.Dir(s.BasePath))))
+	} else {
+		r.Methods(http.MethodGet).Path("/image/{id}").Handler(http.HandlerFunc(app.Redirector))
+	}
+
+	// static asset
+	r.Methods(http.MethodGet).PathPrefix("/js/").Handler(
+		http.StripPrefix("/js/", http.FileServer(http.Dir(filepath.Join("client", "dist", "js")))))
+	r.Methods(http.MethodGet).PathPrefix("/css/").Handler(
+		http.StripPrefix("/css/", http.FileServer(http.Dir(filepath.Join("client", "dist", "css")))))
+	r.Methods(http.MethodGet).PathPrefix("/img/").Handler(
+		http.StripPrefix("/img/", http.FileServer(http.Dir(filepath.Join("client", "dist", "img")))))
+
+	// API
+	r.Methods(http.MethodPost).Path("/api/image").Handler(
+		loggingMiddleware(http.HandlerFunc(app.CreateImage)))
+
+	return r
 }
