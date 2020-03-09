@@ -1,4 +1,4 @@
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 
 filegroup(
     name = "ogpapp_files",
@@ -9,13 +9,21 @@ filegroup(
     ],
     visibility = ["//visibility:public"],
 )
-
 container_image(
-    name = "ogp_app_container",
+    name = "ogpapp_container",
     base = "@distroless_base_debian10//image",
     directory = "/app",
     files = [
         ":ogpapp_files",
     ],
-    cmd = ["/app/ogp-app", "-c", "prd.toml"],
+    cmd = ["/app/ogp-app", "-c", "/app/prd.toml"],
+)
+
+container_push(
+    name = "ogpapp_push",
+    format = "Docker",
+    image = ":ogpapp_container",
+    registry = "gcr.io",
+    repository = "pyspa-bot/ogp-app",
+    tag = "bazel",
 )
