@@ -3,9 +3,11 @@ steps:
 - name: 'alpine'
   args: ['chown', 'root:root', 'Koruri-Bold.ttf']
   waitFor: ['-']
+  id: CHOWN_TTF
 - name: 'alpine'
   args: ['chown', 'root:root', '-R', 'config']
   waitFor: ['-']
+  id: CHOWN_CONFIG
 
 - name: 'gcr.io/cloud-builders/go:debian'
   env:
@@ -38,6 +40,8 @@ steps:
   waitFor:
   - 'OGPAPP'
   - 'CLIENT_BUILD'
+  - 'CHOWN_TTF'
+  - 'CHOWN_CONFIG'
   id: 'CONTAINER_PUSH'
 
 options:
