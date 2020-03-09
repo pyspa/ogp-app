@@ -44,8 +44,9 @@ export default class Home extends Vue {
     } catch (e) {
       alert(e);
       console.error(e);
+    } finally {
+      this.loading = false;
     }
-    this.loading = false;
   }
 }
 </script>
