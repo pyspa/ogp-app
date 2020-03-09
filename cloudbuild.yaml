@@ -25,14 +25,8 @@ steps:
   - 'CLIENT_CI'
   id: 'CLIENT_BUILD'
 
-- name: alpine
-  args: ['find', '.']
-  waitFor:
-  - 'CLIENT_BUILD'
-  id: 'LS'
-
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['build', '//:ogp_app_container']
+  args: ['build', '--host_force_python=PY2', '--verbose_failures', ':ogp_app_container']
   waitFor:
   - 'OGPAPP'
   - 'CLIENT_BUILD'
