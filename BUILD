@@ -23,7 +23,10 @@ filegroup(
 
 filegroup(
     name = "ogpapp_client_img",
-    srcs = glob(["client/dist/img/*"]),
+    srcs = glob([
+        "client/dist/img/*",
+        "client/dist/img/icons/*.png",
+    ]),
 )
 
 pkg_tar(
