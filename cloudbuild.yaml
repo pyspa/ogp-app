@@ -1,4 +1,12 @@
 steps:
+# TODO(ymotongpoo): Remove this `chown` part once the issue on Cloud Bulid gets fixed
+- name: 'alpine'
+  args: ['chown', 'root:root', 'Koruri-Bold.ttf']
+  waitFor: ['-']
+- name: 'alpine'
+  args: ['chown', 'root:root', '-R', 'config']
+  waitFor: ['-']
+
 - name: 'gcr.io/cloud-builders/go:debian'
   env:
   - 'GO111MODULE=on'
@@ -26,14 +34,11 @@ steps:
   id: 'CLIENT_BUILD'
 
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['build', '--host_force_python=PY2', '--verbose_failures', ':ogp_app_container']
+  args: ['run', '--host_force_python=PY2', ':ogpapp_push']
   waitFor:
   - 'OGPAPP'
   - 'CLIENT_BUILD'
-  id: 'CONTAINER'
-
-images:
-- 'gcr.io/$PROJECT_ID/ogp-app'
+  id: 'CONTAINER_PUSH'
 
 options:
   machineType: 'N1_HIGHCPU_8'
