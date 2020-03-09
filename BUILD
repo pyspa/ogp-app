@@ -1,5 +1,6 @@
 load("@io_bazel_rules_docker//container:container.bzl",
     "container_image", "container_push", "container_layer")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 filegroup(
     name = "ogpapp_files",
@@ -10,16 +11,36 @@ filegroup(
     ],
 )
 
-container_layer(
-    name = "ogpapp_client_layer",
-    files = glob(["client/dist/*"]),
-    directory = "/app/client/dist",
+filegroup(
+    name = "ogpapp_client_js",
+    srcs = glob(["client/dist/js/*.js"]),
+)
+
+filegroup(
+    name = "ogpapp_client_css",
+    srcs = glob(["client/dist/css/*.css"]),
+)
+
+filegroup(
+    name = "ogpapp_client_img",
+    srcs = glob(["client/dist/img/*"]),
+)
+
+pkg_tar(
+    name = "ogpapp_client",
+    strip_prefix = "client/dist",
+    srcs = glob(["client/dist/*"]) + [
+        ":ogpapp_client_js",
+        ":ogpapp_client_css",
+        ":ogpapp_client_img",
+    ],
+    package_dir = "/client/dist",
 )
 
 container_image(
     name = "ogpapp_container",
-    base = "@distroless_base_debian10//image",
-    layers = ["ogpapp_client_layer"],
+    base = "@distroless_base_debian10_debug//image",
+    tars = ["ogpapp_client"],
     directory = "/app",
     workdir = "/app",
     files = [
