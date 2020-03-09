@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 load("@io_bazel_rules_docker//container:container.bzl",
     "container_image", "container_push", "container_layer")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+=======
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
+>>>>>>> Fix bug around file permission on bazel and container_push
 
 filegroup(
     name = "ogpapp_files",
@@ -42,11 +46,14 @@ pkg_tar(
     ],
     package_dir = "/client/dist",
 )
-
 container_image(
     name = "ogpapp_container",
+<<<<<<< HEAD
     base = "@distroless_base_debian10_debug//image",
     tars = ["ogpapp_client"],
+=======
+    base = "@distroless_base_debian10//image",
+>>>>>>> Fix bug around file permission on bazel and container_push
     directory = "/app",
     workdir = "/app",
     files = [
