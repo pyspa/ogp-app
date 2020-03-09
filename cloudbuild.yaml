@@ -1,0 +1,45 @@
+steps:
+- name: 'gcr.io/cloud-builders/go:debian'
+  env:
+  - 'GO111MODULE=on'
+  - 'CGO_ENABLED=0'
+  - 'PROJECT_ROOT=ogp-app'
+  args: ['build', '-o', 'ogp-app', '.']
+  waitFor: ['-']
+  id: 'OGPAPP'
+
+- name: 'gcr.io/cloud-builders/npm'
+  env:
+  - 'NODE_VERSION=13.10.1'
+  - 'PYTHON=python2.7'
+  args: ['ci']
+  dir: 'client'
+  id: 'CLIENT_CI'
+
+- name: 'gcr.io/cloud-builders/npm'
+  env:
+  - 'NODE_VERSION=13.10.1'
+  args: ['run', 'build']
+  dir: 'client'
+  waitFor:
+  - 'CLIENT_CI'
+  id: 'CLIENT_BUILD'
+
+- name: alpine
+  args: ['find', '.']
+  waitFor:
+  - 'CLIENT_BUILD'
+  id: 'LS'
+
+- name: 'gcr.io/cloud-builders/bazel'
+  args: ['build', '//:ogp_app_container']
+  waitFor:
+  - 'OGPAPP'
+  - 'CLIENT_BUILD'
+  id: 'CONTAINER'
+
+images:
+- 'gcr.io/$PROJECT_ID/ogp-app'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
