@@ -15,7 +15,7 @@ container_image(
     base = "@distroless_base_debian10//image",
     directory = "/app",
     files = [
-        "//:ogpapp_files",
+        ":ogpapp_files",
     ],
     cmd = ["/app/ogp-app", "-c", "prd.toml"],
 )
