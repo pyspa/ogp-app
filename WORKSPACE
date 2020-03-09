@@ -32,3 +32,15 @@ container_pull(
   # https://console.cloud.google.com/gcr/images/distroless/GLOBAL/base-debian10
   digest = "sha256:732acc54362badaa64d9c01619020cf96ce240b97e2f1390d2a44cc22b9ba6a3",
 )
+
+# for debug
+container_pull(
+  name = "distroless_base_debian10_debug",
+  registry = "gcr.io",
+  repository = "distroless/base-debian10",
+  tag = "debug",
+  # 'tag' is also supported, but digest is encouraged for reproducibility.
+  # Find the SHA256 digest value from the detials page of prebuilt containers.
+  # https://console.cloud.google.com/gcr/images/distroless/GLOBAL/base-debian10
+  digest = "sha256:8ca4526452afe5d03f53c41c76c4ddb079734eb99913aff7069bfd0d72457726",
+)
