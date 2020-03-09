@@ -43,12 +43,6 @@ pkg_tar(
     package_dir = "/client/dist",
 )
 
-container_layer(
-    name = "ogpapp_client_layer",
-    files = glob(["client/dist/*"]),
-    directory = "/app/client/dist",
-)
-
 container_image(
     name = "ogpapp_container",
     base = "@distroless_base_debian10_debug//image",
