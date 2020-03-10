@@ -14,4 +14,8 @@ COPY --from=app /go/bin/ogp-app .
 COPY --from=app /go/src/ogp-app/config/ ./
 COPY --from=assets client/dist/ client/dist/
 COPY Koruri-Bold.ttf .
+<<<<<<< HEAD
 CMD ["/app/ogp-app", "-c", "/app/prd.toml"]
+=======
+CMD ["/app/ogp-app", "-c", "prd.toml"]
+>>>>>>> de7f8683081872d6ff26976957851a9bdcf0153c
