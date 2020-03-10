@@ -36,7 +36,17 @@ steps:
   id: 'CLIENT_BUILD'
 
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['run', '--host_force_python=PY2', ':ogpapp_push']
+  args: ['run',
+         '--google_default_credentials',
+         '--spawn_strategy=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=Genrule=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=ContainerPushDigest=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=TemplateExpand=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=SourceSymlinkManifest=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=SymlinkTree=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=Middleman=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--remote_http_cache=https://storage.googleapis.com/ogp-app-build',
+         ':ogpapp_push']
   waitFor:
   - 'OGPAPP'
   - 'CLIENT_BUILD'
