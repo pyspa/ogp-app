@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 	"text/template"
 
 	"github.com/BurntSushi/toml"
@@ -25,7 +24,9 @@ import (
 // Config ogp.app config
 type Config struct {
 	BaseURL            string  `toml:"base_url"`
+	APIServerBind      string  `toml:"api_server_bind"`
 	APIServerPort      string  `toml:"api_server_port"`
+	TLS                bool    `toml:"tls"`
 	KoruriBoldFontPath string  `toml:"koruri_bold_font_path"`
 	DefaultImageWidth  int     `toml:"default_image_width"`
 	DefaultImageHeight int     `toml:"default_image_height"`
@@ -103,10 +104,6 @@ func NewApp(cfg *Config) (*App, error) {
 		OgpPageTmpl:   ogpPageTmpl,
 		IndexPageTmpl: string(idxbuf),
 	}, nil
-}
-
-func isTLS(url string) bool {
-	return strings.HasPrefix(url, "https")
 }
 
 func createImage(width, height int, fontsize float64, ft *truetype.Font, text, out string) error {
