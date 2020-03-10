@@ -40,6 +40,8 @@ go_library(
 go_binary(
     name = "ogpapp_binary",
     embed = [":go_default_library"],
+    cgo = False,
+    out = "ogp-app",
     visibility = ["//visibility:public"],
 )
 

@@ -1,5 +1,8 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
+# NOTE: @io_bazel_rules_go must come before @io_bazel_rules_docker
+# to make sure to have the specicfied version.
+# ref. https://github.com/bazelbuild/rules_go/issues/2398
 http_archive(
     name = "io_bazel_rules_go",
     urls = [
