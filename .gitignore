@@ -19,3 +19,6 @@ data
 
 .env
 *.pem
+
+# bazel related directories
+bazel-*

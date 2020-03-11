@@ -1,22 +1,9 @@
 steps:
 # TODO(ymotongpoo): Remove this `chown` part once the issue on Cloud Bulid gets fixed
 - name: 'alpine'
-  args: ['chown', 'root:root', 'Koruri-Bold.ttf']
+  args: ['chown', 'root:root', '-R', '.']
   waitFor: ['-']
-  id: CHOWN_TTF
-- name: 'alpine'
-  args: ['chown', 'root:root', '-R', 'config']
-  waitFor: ['-']
-  id: CHOWN_CONFIG
-
-- name: 'gcr.io/cloud-builders/go:debian'
-  env:
-  - 'GO111MODULE=on'
-  - 'CGO_ENABLED=0'
-  - 'PROJECT_ROOT=ogp-app'
-  args: ['build', '-o', 'ogp-app', '.']
-  waitFor: ['-']
-  id: 'OGPAPP'
+  id: CHOWN
 
 - name: 'gcr.io/cloud-builders/npm'
   env:
@@ -36,12 +23,20 @@ steps:
   id: 'CLIENT_BUILD'
 
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['run', '--host_force_python=PY2', ':ogpapp_push']
+  args: ['run',
+         '--google_default_credentials',
+         '--spawn_strategy=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=Genrule=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=ContainerPushDigest=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=TemplateExpand=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=SourceSymlinkManifest=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=SymlinkTree=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--strategy=Middleman=local,processwrapper-sandbox,sandboxed,standalone,worker',
+         '--remote_http_cache=https://storage.googleapis.com/ogp-app-build',
+         ':ogpapp_push']
   waitFor:
-  - 'OGPAPP'
   - 'CLIENT_BUILD'
-  - 'CHOWN_TTF'
-  - 'CHOWN_CONFIG'
+  - 'CHOWN'
   id: 'CONTAINER_PUSH'
 
 options:
