@@ -20,6 +20,6 @@ genrule(
         ":ogpapp_client_src",
     ],
     outs = ["dist"],
-    cmd = "$(location vue_cli_service) build",
+    cmd = "@npm//:node_modules/@vue/cli-service/bin/vue_cli_service.js build",
     tools = [":vue_cli_service"],
 )
