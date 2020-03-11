@@ -1,3 +1,8 @@
+workspace(
+    name = "ogpapp",
+    managed_directories = {"@client": ["client"]},
+)
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # NOTE: @io_bazel_rules_go must come before @io_bazel_rules_docker
