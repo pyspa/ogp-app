@@ -77,7 +77,7 @@ container_pull(
     digest = "sha256:732acc54362badaa64d9c01619020cf96ce240b97e2f1390d2a44cc22b9ba6a3",
 )
 
-# for debug
+# For debug
 container_pull(
     name = "distroless_base_debian10_debug",
     registry = "gcr.io",
@@ -89,6 +89,7 @@ container_pull(
     digest = "sha256:8ca4526452afe5d03f53c41c76c4ddb079734eb99913aff7069bfd0d72457726",
 )
 
+## The following sections are auto maitained by gazelle
 go_repository(
     name = "co_honnef_go_tools",
     importpath = "honnef.co/go/tools",
