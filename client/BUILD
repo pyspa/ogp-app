@@ -12,11 +12,16 @@ filegroup(
     srcs = glob([
         "public/*",
         "src/assets/*",
-        "src/components/*",
-        "src/router/*",
-        "src/store/*",
-        "src/views/*",
+        "src/components/*.vue",
+        "src/router/*.ts",
+        "src/store/*.ts",
+        "src/views/*.vue",
         "src/*",
+        "vue.config.js",
+        "tsconfig.json",
+        "babel.config.js",
+        ".browserlistrc",
+        ".eslintrc.js",
     ]),
 )
 
@@ -26,17 +31,9 @@ vue_cli_service(
     name = "ogpapp_client_build",
     args = [
         "build",
-        "--modern",
     ],
-    data = glob([
-        "public/*",
-        "src/assets/*",
-        "src/components/*",
-        "src/router/*",
-        "src/store/*",
-        "src/views/*",
-        "src/*",
-    ]) + [
+    data = [
+        ":ogpapp_client_src",
         "@npm//:node_modules",
     ],
     output_dir = True,
