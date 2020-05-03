@@ -44,16 +44,12 @@ export default class Page extends Vue {
 
 <style lang="scss" scoped>
 .image {
-  margin-top: 20px;
+  margin: 20px auto 0;
+  min-width: 320px;
+  max-width: 1200px;
   img {
+    width: 100%;
     box-shadow: 0 0 5px rgba(16, 14, 23, 0.25);
-  }
-}
-@media screen and (max-width: 480px) {
-  .image {
-    img {
-      max-width: 320px;
-    }
   }
 }
 </style>
