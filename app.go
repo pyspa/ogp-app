@@ -106,10 +106,16 @@ func NewApp(cfg *Config) (*App, error) {
 	}, nil
 }
 
-func createImage(width, height int, fontsize float64, ft *truetype.Font, text, out string) error {
-	logger.Info().Str("words", text).Send()
+func createImage(
+	width, height int,
+	fontsize float64,
+	ft *truetype.Font,
+	text, out string,
+	src draw.Image,
+	color *image.Uniform) error {
+
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.Draw(img, img.Bounds(), image.White, image.ZP, draw.Src)
+	draw.Draw(img, img.Bounds(), src, image.ZP, draw.Src)
 
 	opt := truetype.Options{
 		Size: fontsize,
@@ -117,7 +123,7 @@ func createImage(width, height int, fontsize float64, ft *truetype.Font, text, o
 	face := truetype.NewFace(ft, &opt)
 	dr := &font.Drawer{
 		Dst:  img,
-		Src:  image.Black,
+		Src:  color,
 		Face: face,
 		Dot:  fixed.Point26_6{},
 	}
@@ -165,6 +171,7 @@ func (app *App) IndexPage(w http.ResponseWriter, r *http.Request) {
 
 type createImageReq struct {
 	Words string `json:"words"`
+	Space bool   `json:"is_space"`
 }
 
 // CreateImage create ogp image API
@@ -175,11 +182,39 @@ func (app *App) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	words := d.Words
+	logger.Info().Str("words", words).Send()
 	id := uuid.New()
 	filename := fmt.Sprintf("%s.png", id.String())
 	filepath := path.Join("data", filename)
+
+	var (
+		img       draw.Image
+		fontColor *image.Uniform
+		ok        bool
+	)
 	wi, he, fs := app.Config.DefaultImageWidth, app.Config.DefaultImageHeight, app.Config.DefaultFontSize
-	if err := createImage(wi, he, fs, app.KoruriBold, words, filepath); err != nil {
+	if d.Space {
+		sf, err := os.Open(path.Join("templates", "space.png"))
+		if err != nil {
+			logger.Error().Msgf("failed to open template: %s", err)
+			return
+		}
+		dimg, _, err := image.Decode(sf)
+		if err != nil {
+			logger.Error().Msgf("failed to decode template: %s", err)
+			return
+		}
+		img, ok = dimg.(draw.Image)
+		if !ok {
+			logger.Error().Msgf("failed to cast draw.Image: %s", err)
+			return
+		}
+		fontColor = image.White
+	} else {
+		img = image.NewRGBA(image.Rect(0, 0, wi, he))
+		fontColor = image.Black
+	}
+	if err := createImage(wi, he, fs, app.KoruriBold, words, filepath, img, fontColor); err != nil {
 		logger.Error().Msgf("create image failed: %s", err)
 		return
 	}

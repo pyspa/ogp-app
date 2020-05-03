@@ -8,8 +8,12 @@
           placeholder="Please input your words."
           required
         />
-        <button type="submit">OGP!!!</button>
       </div>
+      <div>
+        <label>space ogp: </label>
+        <input type="checkbox" v-model="isSpace" />
+      </div>
+      <button type="submit">OGP!!!</button>
     </form>
     <loading v-if="loading" />
   </div>
@@ -29,6 +33,7 @@ import Loading from "@/components/Loading";
 export default class Home extends Vue {
   loading = false;
   words = "";
+  isSpace = false;
 
   get apiHost() {
     return process.env.VUE_APP_API_HOST || "";
@@ -38,7 +43,8 @@ export default class Home extends Vue {
     try {
       this.loading = true;
       const response = await this.axios.post(`${this.apiHost}/api/image`, {
-        words: this.words
+        words: this.words,
+        isSpace: this.isSpace
       });
       this.$router.push({ name: "Page", params: { id: response.data.id } });
     } catch (e) {
